@@ -19,14 +19,16 @@ export function TodosHeader({
         <Text muted>Create, organize, and complete tasks.</Text>
       </div>
       <div className="row">
-        <Button
-          variant="secondary"
-          disabled={disabled || completedCount === 0}
-          onClick={onClearCompleted}
-        >
-          <Trash2 size={18} aria-hidden="true" />
-          Clear completed
-        </Button>
+        {completedCount > 0 && (
+          <Button
+            variant="secondary"
+            disabled={disabled}
+            onClick={onClearCompleted}
+          >
+            <Trash2 size={18} aria-hidden="true" />
+            Clear completed ({completedCount})
+          </Button>
+        )}
         <Button disabled={disabled} onClick={onCreate}>
           <Plus size={18} aria-hidden="true" />
           New task
