@@ -4,7 +4,6 @@
 set -uo pipefail
 
 OUT=${TEST_KEEPER_OUT:?}
-BASE=origin/${BASE_REF:?}
 TEST_PATHS=.claude/skills/gate-unit-tests/scripts/test-paths.mjs
 # The action restores these from base; put the PR head back so the guard sees only agent writes.
 CONFIG_PATHS=(.claude .mcp.json .claude.json .gitmodules .ripgreprc CLAUDE.md CLAUDE.local.md .husky)
@@ -22,8 +21,9 @@ revert_all() {
   git clean -fdq -e "$OUT" -e .claude-pr
 }
 
-restore_from_base() {
-  git checkout "$BASE" -- "$1" 2>/dev/null || rm -f "$1"
+# HEAD is the PR head: the author's version comes back, a file the agent added is removed.
+revert_agent_change() {
+  git checkout HEAD -- "$1" 2>/dev/null || rm -f "$1"
   echo "$1" >> "$OUT/reverted.txt"
 }
 
@@ -51,12 +51,12 @@ fi
 if [ "$status" = done ]; then
   for f in $(changed_paths | grep -E '\.test\.tsx?$'); do
     pkg=${f%%/*}
-    if ! npm --prefix "$pkg" run test -- "${f#"$pkg"/}"; then restore_from_base "$f"; fi
+    if ! npm --prefix "$pkg" run test -- "${f#"$pkg"/}"; then revert_agent_change "$f"; fi
   done
   for pkg in backend frontend; do
     if changed_paths | grep -q "^$pkg/"; then
       if ! npm --prefix "$pkg" run test; then
-        for f in $(changed_paths | grep "^$pkg/" | grep -vE '\.test\.tsx?$'); do restore_from_base "$f"; done
+        for f in $(changed_paths | grep "^$pkg/" | grep -vE '\.test\.tsx?$'); do revert_agent_change "$f"; done
       fi
       if ! npm --prefix "$pkg" run typecheck; then status=verification_failed; fi
     fi
