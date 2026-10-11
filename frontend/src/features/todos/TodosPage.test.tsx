@@ -201,7 +201,9 @@ it('resets the clear-completed error before retrying', async () => {
 it('shows the clear-completed error instead of the query error', () => {
   setup({
     query: queryFailure,
-    clearMutation: { error: new Error('Could not clear.') } as Partial<ClearMutation>,
+    clearMutation: {
+      error: new Error('Could not clear.'),
+    } as Partial<ClearMutation>,
   })
 
   expect(screen.getByTestId('alert')).toHaveTextContent('Could not clear.')
@@ -213,14 +215,11 @@ it('shows the clear-completed error instead of the query error', () => {
 it.each([
   { completed: true, count: '1' },
   { completed: false, count: '0' },
-])(
-  'passes $count completed tasks to the header',
-  ({ completed, count }) => {
-    setup({ todo: { ...todoFixture, completed } })
+])('passes $count completed tasks to the header', ({ completed, count }) => {
+  setup({ todo: { ...todoFixture, completed } })
 
-    expect(screen.getByLabelText('completed count')).toHaveTextContent(count)
-  },
-)
+  expect(screen.getByLabelText('completed count')).toHaveTextContent(count)
+})
 
 it.each([
   { deleted: 1, notice: '1 completed task deleted.' },
