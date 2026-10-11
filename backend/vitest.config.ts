@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
@@ -7,15 +7,24 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/types.ts', 'src/generated/**'],
+      exclude: [
+        'src/**/types.ts',
+        'src/generated/**',
+        'src/main.ts',
+        'src/core/lifespan.ts',
+      ],
+      reportOnFailure: true,
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
       thresholds: {
         perFile: true,
         'src/features/todos/{validators,mappers}.ts': {
-          statements: 100, branches: 100, functions: 100, lines: 100,
+          statements: 100,
+          branches: 100,
+          functions: 100,
+          lines: 100,
         },
       },
     },
   },
-});
+})
