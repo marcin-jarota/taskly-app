@@ -128,21 +128,31 @@ jobs:
       - id: comment
         if: steps.changed.outputs.source == 'true'
         env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
           EXECUTION_FILE: ${{ steps.agent.outputs.execution_file }}
           STATUS: ${{ steps.publish.outputs.status }}
           SHA: ${{ steps.publish.outputs.sha }}
         run: |
-          usage=$(jq -r '
-            def k: if . >= 1000 then "\(. / 100 | round / 10)k" else "\(.)" end;
+          read -r cost tokens out turns < <(jq -r '
             [.[] | select(.type == "result")] | last
-            | if . == null then "💸 n/a"
-              else "💸 $\(.total_cost_usd * 100 | round / 100)"
-                + " · 🔢 \((.usage | (.input_tokens + .cache_creation_input_tokens + .cache_read_input_tokens + .output_tokens)) | k) tokens"
-                + " (out \(.usage.output_tokens | k)) · 🔁 \(.num_turns) turns"
-              end' "${EXECUTION_FILE:-/dev/null}" 2>/dev/null)
+            | if . == null then "0 0 0 0"
+              else "\(.total_cost_usd) \(.usage | .input_tokens + .cache_creation_input_tokens + .cache_read_input_tokens + .output_tokens) \(.usage.output_tokens) \(.num_turns)"
+              end' "${EXECUTION_FILE:-/dev/null}" 2>/dev/null || echo "0 0 0 0")
+          read -r pcost ptokens pruns < <(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" --paginate -q '.[].body' 2>/dev/null \
+            | grep -o '<!-- test-keeper-totals [^>]* -->' | tail -1 \
+            | sed -E 's/.*cost=([0-9.]+) tokens=([0-9]+) runs=([0-9]+).*/\1 \2 \3/' || true)
+          read -r tcost ttokens truns < <(jq -nr --argjson c "$cost" --argjson t "$tokens" --argjson pc "${pcost:-0}" --argjson pt "${ptokens:-0}" --argjson pr "${pruns:-0}" \
+            '"\($c + $pc) \($t + $pt) \($pr + 1)"')
+          k() { jq -nr --argjson n "$1" 'if $n >= 1000 then "\($n / 100 | round / 10)k" else "\($n)" end'; }
+          money() { jq -nr --argjson n "$1" '"$\($n * 100 | round / 100)"'; }
+          run_line="💸 $(money "$cost") · 🔢 $(k "$tokens") tokens (out $(k "$out")) · 🔁 $turns turns"
+          total_line=""
+          [ "$truns" -gt 1 ] && total_line="Total over $truns runs: 💸 $(money "$tcost") · 🔢 $(k "$ttokens") tokens"
           {
             echo "## Unit test keeper"
-            echo "**${STATUS}** · ${usage:-💸 n/a} · ${SHA:+commit }${SHA:-no commit}"
+            echo "**${STATUS}** · ${run_line} · ${SHA:+commit }${SHA:-no commit}"
+            [ -n "$total_line" ] && echo "$total_line"
             echo
             if [ -s "$TEST_KEEPER_OUT/report.md" ]; then cat "$TEST_KEEPER_OUT/report.md"; else echo "The agent wrote no report."; fi
             if [ -s "$TEST_KEEPER_OUT/reverted.txt" ]; then
@@ -150,6 +160,7 @@ jobs:
               sed 's/^/- `/; s/$/`/' "$TEST_KEEPER_OUT/reverted.txt"
             fi
             echo; echo "Add the \`test-keeper\` label to run the agent again."
+            echo "<!-- test-keeper-totals cost=$tcost tokens=$ttokens runs=$truns -->"
           } > "$TEST_KEEPER_OUT/comment.md"
           if grep -qE 'sk-ant-|ghp_|github_pat_' "$TEST_KEEPER_OUT/comment.md"; then
             echo "comment looks like it holds a secret, not posting"; exit 1
