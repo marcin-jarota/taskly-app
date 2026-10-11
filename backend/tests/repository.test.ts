@@ -132,6 +132,19 @@ it.each([{}, JSON.parse('{"id":2}')])(
   },
 )
 
+it('counts all, completed and active tasks', async () => {
+  const { database, repository } = setup()
+  const count = vi
+    .spyOn(database.todo, 'count')
+    .mockResolvedValueOnce(5)
+    .mockResolvedValueOnce(2)
+
+  const stats = await repository.stats()
+
+  expect(stats).toEqual({ total: 5, active: 3, completed: 2 })
+  expect(count).toHaveBeenNthCalledWith(2, { where: { completed: true } })
+})
+
 it.each([
   { count: 1, deleted: true },
   { count: 0, deleted: false },

@@ -40,6 +40,7 @@ it('serves the OpenAPI specification', async () => {
   expect(Object.keys(response.body.paths)).toEqual([
     '/api/health',
     '/api/todos',
+    '/api/todos/stats',
     '/api/todos/{id}',
   ])
 })
