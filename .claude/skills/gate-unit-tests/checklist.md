@@ -1,7 +1,5 @@
 # What a good test is (taskly)
 
-One rulebook, used twice: by `write-unit-tests` while writing and before its report, and by the PR test review after writing. The word in brackets is the `findings.type` the review reports when a test breaks the rule.
-
 ## Rules
 
 - **It fails when behavior breaks** (`tautology`, `weak-test`). Name one plausible wrong version of the code (lowercasing dropped, `<` turned into `<=`, UTC date instead of local) and check that the input gives a different result for it. If right and wrong code return the same thing for the input, the test passes either way and its name lies: query `' api '` cannot show the query is lowercased (use `' API '`), and 23:30 in UTC+2 is the same day in UTC. Tests that only render, check a mock was called with anything, or assert the value a mock was told to return fail this too. An existing test with a weak input stays as it is; add the case that does tell right from wrong next to it.
