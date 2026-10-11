@@ -132,10 +132,17 @@ jobs:
           STATUS: ${{ steps.publish.outputs.status }}
           SHA: ${{ steps.publish.outputs.sha }}
         run: |
-          cost=$(jq -r '[.[] | select(.type == "result")] | last | .total_cost_usd | if . then "$\(. * 100 | round / 100)" else "n/a" end' "${EXECUTION_FILE:-/dev/null}" 2>/dev/null)
+          usage=$(jq -r '
+            def k: if . >= 1000 then "\(. / 100 | round / 10)k" else "\(.)" end;
+            [.[] | select(.type == "result")] | last
+            | if . == null then "💸 n/a"
+              else "💸 $\(.total_cost_usd * 100 | round / 100)"
+                + " · 🔢 \((.usage | (.input_tokens + .cache_creation_input_tokens + .cache_read_input_tokens + .output_tokens)) | k) tokens"
+                + " (out \(.usage.output_tokens | k)) · 🔁 \(.num_turns) turns"
+              end' "${EXECUTION_FILE:-/dev/null}" 2>/dev/null)
           {
             echo "## Unit test keeper"
-            echo "**${STATUS}** · cost ${cost:-n/a} · ${SHA:+commit }${SHA:-no commit}"
+            echo "**${STATUS}** · ${usage:-💸 n/a} · ${SHA:+commit }${SHA:-no commit}"
             echo
             if [ -s "$TEST_KEEPER_OUT/report.md" ]; then cat "$TEST_KEEPER_OUT/report.md"; else echo "The agent wrote no report."; fi
             if [ -s "$TEST_KEEPER_OUT/reverted.txt" ]; then
