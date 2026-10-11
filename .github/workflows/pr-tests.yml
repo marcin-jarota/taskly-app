@@ -82,8 +82,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm --prefix backend ci
-      - run: npm --prefix frontend ci
       - id: changed
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -93,6 +91,10 @@ jobs:
           if grep -qE '^(backend|frontend)/src/' "$TEST_KEEPER_OUT/changed.txt"; then
             echo source=true >> "$GITHUB_OUTPUT"
           fi
+      - if: steps.changed.outputs.source == 'true'
+        run: npm --prefix backend ci
+      - if: steps.changed.outputs.source == 'true'
+        run: npm --prefix frontend ci
 
       - id: agent
         if: steps.changed.outputs.source == 'true'
@@ -130,10 +132,10 @@ jobs:
           STATUS: ${{ steps.publish.outputs.status }}
           SHA: ${{ steps.publish.outputs.sha }}
         run: |
-          cost=$(jq -r '[.[] | select(.type == "result")] | last | .total_cost_usd // empty' "${EXECUTION_FILE:-/dev/null}" 2>/dev/null)
+          cost=$(jq -r '[.[] | select(.type == "result")] | last | .total_cost_usd | if . then "$\(. * 100 | round / 100)" else "n/a" end' "${EXECUTION_FILE:-/dev/null}" 2>/dev/null)
           {
             echo "## Unit test keeper"
-            echo "**${STATUS}** · cost ${cost:+\$}${cost:-n/a} · ${SHA:+commit $SHA}${SHA:-no commit}"
+            echo "**${STATUS}** · cost ${cost:-n/a} · ${SHA:+commit }${SHA:-no commit}"
             echo
             if [ -s "$TEST_KEEPER_OUT/report.md" ]; then cat "$TEST_KEEPER_OUT/report.md"; else echo "The agent wrote no report."; fi
             if [ -s "$TEST_KEEPER_OUT/reverted.txt" ]; then
