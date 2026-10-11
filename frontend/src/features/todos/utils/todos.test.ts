@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { isOverdue, selectTodos, validateTodo } from './todos'
+import { countOverdue, isOverdue, selectTodos, validateTodo } from './todos'
 import type { Todo, TodoInput } from '../types'
 
 const base: Todo = {
@@ -185,5 +185,29 @@ describe('isOverdue', () => {
 
   it('is false for a task without a due date', () => {
     expect(isOverdue({ ...base, due_date: null })).toBe(false)
+  })
+})
+
+describe('countOverdue', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 9, 15, 12, 0, 0))
+  })
+  afterEach(() => vi.useRealTimers())
+
+  it('counts only open tasks past their due date', () => {
+    const todos: Todo[] = [
+      { ...base, id: 1, due_date: '2026-10-14' },
+      { ...base, id: 2, due_date: '2026-10-01' },
+      { ...base, id: 3, due_date: '2026-10-14', completed: true },
+      { ...base, id: 4, due_date: '2026-10-15' },
+      { ...base, id: 5, due_date: null },
+    ]
+
+    expect(countOverdue(todos)).toBe(2)
+  })
+
+  it('is 0 for an empty list', () => {
+    expect(countOverdue([])).toBe(0)
   })
 })
