@@ -1,5 +1,5 @@
-import { todoSchema } from './validators.js';
-import type { TodoRecord, Todo } from './types.js';
+import { todoSchema } from './validators.js'
+import type { TodoRecord, Todo } from './types.js'
 
 export function fromModel(record: TodoRecord): Todo {
   return todoSchema.parse({
@@ -11,5 +11,5 @@ export function fromModel(record: TodoRecord): Todo {
     completed: record.completed,
     created_at: record.created_at.toISOString(),
     updated_at: record.updated_at.toISOString(),
-  });
+  })
 }

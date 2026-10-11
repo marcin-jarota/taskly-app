@@ -1,10 +1,13 @@
-import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from '../generated/prisma/client.js';
-import type { Database } from '../features/todos/types.js';
+import { PrismaPg } from '@prisma/adapter-pg'
+import { PrismaClient } from '../generated/prisma/client.js'
+import type { Database } from '../features/todos/types.js'
 
 export function createDatabase(connectionString: string): PrismaClient {
-  const adapter = new PrismaPg({ connectionString, connectionTimeoutMillis: 10000 });
-  return new PrismaClient({ adapter });
+  const adapter = new PrismaPg({
+    connectionString,
+    connectionTimeoutMillis: 10000,
+  })
+  return new PrismaClient({ adapter })
 }
 
 export async function initialize(database: Database): Promise<void> {
@@ -18,5 +21,5 @@ export async function initialize(database: Database): Promise<void> {
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL
-  )`;
+  )`
 }

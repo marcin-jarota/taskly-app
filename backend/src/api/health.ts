@@ -1,11 +1,11 @@
-import { Router } from 'express';
-import type { Database } from '../features/todos/types.js';
+import { Router } from 'express'
+import type { Database } from '../features/todos/types.js'
 
 export function createHealthRouter(database: Database) {
-  const router = Router();
+  const router = Router()
   router.get('/health', async (req, res) => {
-    await database.todo.findFirst({ select: { id: true } });
-    res.json({ status: 'ok' });
-  });
-  return router;
+    await database.todo.findFirst({ select: { id: true } })
+    res.json({ status: 'ok' })
+  })
+  return router
 }
