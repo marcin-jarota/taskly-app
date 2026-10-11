@@ -1,5 +1,7 @@
 # Taskly App Node
 
+Unit test keeper (agent, skills, PR workflow): see [SOLUTION.md](SOLUTION.md).
+
 ## Setup
 
 ```sh
