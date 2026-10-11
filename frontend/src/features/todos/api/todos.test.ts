@@ -33,3 +33,40 @@ it('sends only writable task fields on creation', async () => {
     }),
   })
 })
+
+it.each([
+  {
+    case: 'only the changed fields',
+    changes: { completed: true },
+    body: { completed: true },
+  },
+  {
+    case: 'only writable fields of a full task',
+    changes: todoFixture,
+    body: {
+      title: todoFixture.title,
+      description: '',
+      priority: 'medium',
+      due_date: null,
+      completed: false,
+    },
+  },
+])('sends $case when updating a task', async ({ changes, body }) => {
+  vi.mocked(request).mockResolvedValue(todoFixture)
+
+  const updated = await todosApi.update(7, changes)
+
+  expect(updated).toEqual(todoFixture)
+  expect(request).toHaveBeenCalledWith('/todos/7', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+})
+
+it('deletes a task by id', async () => {
+  vi.mocked(request).mockResolvedValue(undefined)
+
+  await todosApi.remove(7)
+
+  expect(request).toHaveBeenCalledWith('/todos/7', { method: 'DELETE' })
+})

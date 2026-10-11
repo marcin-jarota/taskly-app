@@ -1,12 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { ComponentProps } from 'react'
 import { expect, it, vi } from 'vitest'
 import { useNotice } from '../../hooks/useNotice'
+import { todoFixture } from '../../test/todoFixture'
+import type { DeleteTodoDialog } from './components/DeleteTodoDialog'
+import type { TodoEditor } from './components/TodoEditor'
+import type { TodoList } from './components/TodoList'
+import type { TodosHeader } from './components/TodosHeader'
 import { useTodoFilters } from './hooks/useTodoFilters'
 import { useTodosBusy } from './hooks/useTodosBusy'
 import { useTodosQuery } from './hooks/useTodosQuery'
 import { useUpdateTodoMutation } from './hooks/useUpdateTodoMutation'
 import { TodosPage } from './TodosPage'
+import type { Todo } from './types'
 
 vi.mock('../../hooks/useNotice', () => ({ useNotice: vi.fn() }))
 vi.mock('./hooks/useTodoFilters', () => ({ useTodoFilters: vi.fn() }))
@@ -16,52 +23,276 @@ vi.mock('./hooks/useUpdateTodoMutation', () => ({
   useUpdateTodoMutation: vi.fn(),
 }))
 vi.mock('./components/TodosHeader', () => ({
-  TodosHeader: () => <h1>Tasks</h1>,
+  TodosHeader: ({ disabled, onCreate }: ComponentProps<typeof TodosHeader>) => (
+    <button disabled={disabled} onClick={onCreate}>
+      New task
+    </button>
+  ),
 }))
 vi.mock('./components/TodoFilters', () => ({ TodoFilters: () => null }))
-vi.mock('./components/TodoList', () => ({ TodoList: () => <p>Task list</p> }))
-vi.mock('./components/TodoEditor', () => ({ TodoEditor: () => null }))
+vi.mock('./components/TodoList', () => ({
+  TodoList: ({
+    todos,
+    onToggle,
+    onEdit,
+    onDelete,
+  }: ComponentProps<typeof TodoList>) => (
+    <>
+      {todos.map((todo) => (
+        <div key={todo.id}>
+          <button onClick={() => onToggle(todo)}>Toggle {todo.title}</button>
+          <button onClick={() => onEdit(todo)}>Edit {todo.title}</button>
+          <button onClick={() => onDelete(todo)}>Delete {todo.title}</button>
+        </div>
+      ))}
+    </>
+  ),
+}))
+vi.mock('./components/TodoEditor', () => ({
+  TodoEditor: ({
+    todo,
+    onClose,
+    onSaved,
+  }: ComponentProps<typeof TodoEditor>) => (
+    <div
+      role="dialog"
+      aria-label={todo === 'new' ? 'New task' : `Edit ${todo.title}`}
+    >
+      <button onClick={onClose}>Close editor</button>
+      <button onClick={() => onSaved('Task saved.')}>Save</button>
+    </div>
+  ),
+}))
 vi.mock('./components/DeleteTodoDialog', () => ({
-  DeleteTodoDialog: () => null,
+  DeleteTodoDialog: ({
+    todo,
+    onClose,
+    onDeleted,
+  }: ComponentProps<typeof DeleteTodoDialog>) => (
+    <div role="dialog" aria-label={`Delete ${todo.title}`}>
+      <button onClick={onClose}>Cancel delete</button>
+      <button onClick={onDeleted}>Confirm delete</button>
+    </div>
+  ),
 }))
 vi.mock('../../components/SuccessNotice', () => ({ SuccessNotice: () => null }))
 
-it('displays a query failure and resets mutation errors before retrying', async () => {
+type Query = ReturnType<typeof useTodosQuery>
+type Mutation = ReturnType<typeof useUpdateTodoMutation>
+
+function setup({
+  query = {},
+  mutation = {},
+  busy = false,
+  todo = todoFixture,
+}: {
+  query?: Partial<Query>
+  mutation?: Partial<Mutation>
+  busy?: boolean
+  todo?: Todo
+} = {}) {
   const user = userEvent.setup()
   const refetch = vi.fn().mockResolvedValue(undefined)
   const reset = vi.fn()
+  const mutateAsync = vi.fn()
+  const notify = vi.fn()
   vi.mocked(useTodosQuery).mockReturnValue({
-    data: [],
+    data: [todo],
     isPending: false,
     isFetching: false,
-    isError: true,
-    error: new Error('The server is unavailable.'),
+    isError: false,
+    error: null,
     refetch,
-  } as unknown as ReturnType<typeof useTodosQuery>)
+    ...query,
+  } as unknown as Query)
   vi.mocked(useUpdateTodoMutation).mockReturnValue({
     error: null,
     reset,
-    mutateAsync: vi.fn(),
-  } as unknown as ReturnType<typeof useUpdateTodoMutation>)
-  vi.mocked(useTodosBusy).mockReturnValue(false)
-  vi.mocked(useNotice).mockReturnValue({ message: '', notify: vi.fn() })
+    mutateAsync,
+    ...mutation,
+  } as unknown as Mutation)
+  vi.mocked(useTodosBusy).mockReturnValue(busy)
+  vi.mocked(useNotice).mockReturnValue({ message: '', notify })
   vi.mocked(useTodoFilters).mockReturnValue({
     filter: 'all',
     search: '',
     sort: 'newest',
-    visible: [],
+    visible: [todo],
     setFilter: vi.fn(),
     setSearch: vi.fn(),
     setSort: vi.fn(),
   })
   render(<TodosPage />)
+  return { user, refetch, reset, mutateAsync, notify }
+}
+
+const queryFailure = {
+  isError: true,
+  error: new Error('The server is unavailable.'),
+} as Partial<Query>
+
+it('displays a query failure and resets mutation errors before retrying', async () => {
+  const { user, refetch, reset } = setup({ query: queryFailure })
+
   expect(screen.getByTestId('alert')).toHaveTextContent(
     'The server is unavailable.',
   )
   await user.click(screen.getByRole('button', { name: 'Try again' }))
+
   await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1))
   expect(reset).toHaveBeenCalledTimes(1)
   expect(reset.mock.invocationCallOrder[0]).toBeLessThan(
     refetch.mock.invocationCallOrder[0],
   )
+})
+
+it('shows the toggle error instead of the query error', () => {
+  setup({
+    query: queryFailure,
+    mutation: { error: new Error('Could not save.') } as Partial<Mutation>,
+  })
+
+  expect(screen.getByTestId('alert')).toHaveTextContent('Could not save.')
+  expect(screen.getByTestId('alert')).not.toHaveTextContent(
+    'The server is unavailable.',
+  )
+})
+
+it.each([
+  {
+    state: 'fetching',
+    query: { ...queryFailure, isFetching: true },
+    busy: false,
+  },
+  { state: 'busy', query: queryFailure, busy: true },
+])('disables retrying while $state', ({ query, busy }) => {
+  setup({ query, busy })
+
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeDisabled()
+})
+
+it.each([
+  { state: 'loading', query: { isPending: true }, busy: false },
+  { state: 'busy', query: {}, busy: true },
+])('disables creating a task while $state', ({ query, busy }) => {
+  setup({ query, busy })
+
+  expect(screen.getByRole('button', { name: 'New task' })).toBeDisabled()
+})
+
+it.each([
+  {
+    completed: false,
+    notice: 'Another task complete. Well done!',
+  },
+  { completed: true, notice: 'Task marked as active.' },
+])(
+  'toggles a task with completed $completed and announces the saved state',
+  async ({ completed, notice }) => {
+    const todo = { ...todoFixture, completed }
+    const { user, mutateAsync, notify } = setup({ todo })
+    mutateAsync.mockResolvedValue({ ...todo, completed: !completed })
+
+    await user.click(
+      screen.getByRole('button', { name: `Toggle ${todo.title}` }),
+    )
+
+    expect(mutateAsync).toHaveBeenCalledWith({
+      id: todo.id,
+      input: { completed: !completed },
+    })
+    expect(notify).toHaveBeenCalledWith(notice)
+  },
+)
+
+it('ignores toggling while another change is saving', async () => {
+  const { user, mutateAsync } = setup({ busy: true })
+
+  await user.click(
+    screen.getByRole('button', { name: `Toggle ${todoFixture.title}` }),
+  )
+
+  expect(mutateAsync).not.toHaveBeenCalled()
+})
+
+it('does not announce a toggle that failed', async () => {
+  const { user, mutateAsync, notify } = setup()
+  mutateAsync.mockRejectedValue(new Error('Could not save.'))
+
+  await user.click(
+    screen.getByRole('button', { name: `Toggle ${todoFixture.title}` }),
+  )
+
+  expect(mutateAsync).toHaveBeenCalledOnce()
+  expect(notify).not.toHaveBeenCalled()
+})
+
+it.each([
+  { trigger: 'New task', editor: 'New task' },
+  {
+    trigger: `Edit ${todoFixture.title}`,
+    editor: `Edit ${todoFixture.title}`,
+  },
+])('opens the editor from "$trigger"', async ({ trigger, editor }) => {
+  const { user } = setup()
+
+  await user.click(screen.getByRole('button', { name: trigger }))
+
+  expect(screen.getByRole('dialog', { name: editor })).toBeVisible()
+})
+
+it('closes the editor and announces the saved task', async () => {
+  const { user, notify } = setup()
+  await user.click(screen.getByRole('button', { name: 'New task' }))
+
+  await user.click(screen.getByRole('button', { name: 'Save' }))
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(notify).toHaveBeenCalledWith('Task saved.')
+})
+
+it('closes the editor without a notice', async () => {
+  const { user, notify } = setup()
+  await user.click(screen.getByRole('button', { name: 'New task' }))
+
+  await user.click(screen.getByRole('button', { name: 'Close editor' }))
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(notify).not.toHaveBeenCalled()
+})
+
+it('asks to confirm deleting the clicked task', async () => {
+  const { user } = setup()
+
+  await user.click(
+    screen.getByRole('button', { name: `Delete ${todoFixture.title}` }),
+  )
+
+  expect(
+    screen.getByRole('dialog', { name: `Delete ${todoFixture.title}` }),
+  ).toBeVisible()
+})
+
+it('closes the delete dialog and announces the deletion', async () => {
+  const { user, notify } = setup()
+  await user.click(
+    screen.getByRole('button', { name: `Delete ${todoFixture.title}` }),
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Confirm delete' }))
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(notify).toHaveBeenCalledWith('Task deleted.')
+})
+
+it('closes the delete dialog without deleting on cancel', async () => {
+  const { user, notify } = setup()
+  await user.click(
+    screen.getByRole('button', { name: `Delete ${todoFixture.title}` }),
+  )
+
+  await user.click(screen.getByRole('button', { name: 'Cancel delete' }))
+
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(notify).not.toHaveBeenCalled()
 })
