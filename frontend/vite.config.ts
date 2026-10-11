@@ -26,6 +26,12 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: './coverage',
       reportOnFailure: true,
+      thresholds: {
+        lines: 88,
+        statements: 86,
+        branches: 71,
+        functions: 80,
+      },
     },
   },
 })

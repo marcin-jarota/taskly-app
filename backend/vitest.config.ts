@@ -17,7 +17,10 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov', 'json-summary'],
       reportsDirectory: 'coverage',
       thresholds: {
-        perFile: true,
+        lines: 95,
+        statements: 95,
+        branches: 94,
+        functions: 93,
         'src/features/todos/{validators,mappers}.ts': {
           statements: 100,
           branches: 100,
