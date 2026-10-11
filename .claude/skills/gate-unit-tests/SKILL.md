@@ -23,7 +23,7 @@ Sort each changed file:
 
 - **source**: `.ts`/`.tsx` under `backend/src` or `frontend/src`, except the design system, `*.stories.*`, `*.styles.ts` and `backend/src/generated/`. Needs an action in the report.
 - **test**: matches the patterns in `scripts/test-paths.mjs` (`backend/tests/**`, `frontend/src/**/*.test.ts(x)`, `frontend/src/test/**`). Goes to the review in step 3.
-- everything else (docs, configs, `openapi.json`): nothing to do, do not list it.
+- everything else (docs, configs, `openapi.json`): no row of its own, but a test that reads such a file (`factory.test.ts` checks the OpenAPI paths) can go red because of it; the full-suite run in step 2 catches that.
 
 The test file for a source file sits at `backend/tests/<name>.test.ts` or next to the source as `<name>.test.ts(x)`. Check with Glob; `null` means a new file.
 
@@ -44,9 +44,9 @@ Not worth unit tests, so normally `skipped`: `types.ts` and `*.types.ts`, `index
 
 "Existing cases cover it" needs evidence: name the case.
 
-A red test you did not write: leave it untouched and record it under Possible bugs as pre-existing. It may be the most useful thing the run finds.
+A red test you did not write: if a file in the diff explains the failure (a changed signature, a new route, a changed data file), update the test and give the source file that caused it an `updated` row. Otherwise leave it untouched and record it under Possible bugs as pre-existing. It may be the most useful thing the run finds.
 
-Everything affected by the change in one go: `env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix <package> run test -- --changed origin/main`.
+Once at the end, run the whole suite of every package you touched (`env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix <package> run test`), so a test you did not open but the diff broke still shows up.
 
 ## 3. Review the tests (optional, last)
 
