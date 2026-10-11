@@ -46,3 +46,97 @@ jobs:
       - run: npm run test:coverage
       - run: node --test '.claude/skills/gate-unit-tests/scripts/*.test.mjs'
         working-directory: .
+
+  test-keeper:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (
+        (github.event.action == 'opened' && !github.event.pull_request.draft) ||
+        github.event.action == 'ready_for_review' ||
+        (github.event.action == 'labeled' && github.event.label.name == 'test-keeper')
+      )
+    runs-on: ubuntu-latest
+    environment: test-keeper
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    env:
+      TEST_KEEPER_OUT: .test-keeper
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm --prefix backend ci
+      - run: npm --prefix frontend ci
+      - id: changed
+        run: |
+          mkdir -p "$TEST_KEEPER_OUT"
+          git diff --name-only "origin/${{ github.base_ref }}...HEAD" > "$TEST_KEEPER_OUT/changed.txt"
+          if grep -qE '^(backend|frontend)/src/' "$TEST_KEEPER_OUT/changed.txt"; then
+            echo source=true >> "$GITHUB_OUTPUT"
+          fi
+
+      - id: agent
+        if: steps.changed.outputs.source == 'true'
+        continue-on-error: true
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ github.token }}
+          prompt: |
+            Run for this pull request. The changed files are in .test-keeper/changed.txt, the out dir is .test-keeper.
+          claude_args: |
+            --agent unit-test-keeper
+            --model ${{ vars.TEST_KEEPER_MODEL || 'claude-sonnet-5-5' }}
+            --effort medium
+            --max-budget-usd 3
+            --permission-mode dontAsk
+            --allowedTools "Read,Glob,Grep,Skill,Edit(backend/tests/**),Edit(frontend/src/**/*.test.ts),Edit(frontend/src/**/*.test.tsx),Edit(frontend/src/test/**),Edit(.test-keeper/**),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix backend run test *),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix backend run test:coverage),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix frontend run test *),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix frontend run test:coverage),Bash(npm --prefix backend run typecheck),Bash(npm --prefix frontend run typecheck),Bash(node .claude/skills/gate-unit-tests/scripts/mutate.mjs *),Bash(git diff *),Bash(git merge-base *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git ls-files *)"
+
+      - id: publish
+        if: steps.changed.outputs.source == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: bash .github/scripts/test-keeper-publish.sh
+
+      - if: steps.publish.outputs.sha != ''
+        env:
+          PAT: ${{ secrets.TEST_KEEPER_PAT }}
+        run: git push "https://x-access-token:${PAT}@github.com/${{ github.repository }}.git" "HEAD:${{ github.head_ref }}"
+
+      - id: comment
+        if: steps.changed.outputs.source == 'true'
+        env:
+          EXECUTION_FILE: ${{ steps.agent.outputs.execution_file }}
+          STATUS: ${{ steps.publish.outputs.status }}
+          SHA: ${{ steps.publish.outputs.sha }}
+        run: |
+          cost=$(jq -r '[.[] | select(.type == "result")] | last | .total_cost_usd // empty' "${EXECUTION_FILE:-/dev/null}" 2>/dev/null)
+          {
+            echo "## Unit test keeper"
+            echo "**${STATUS}** · cost ${cost:+\$}${cost:-n/a} · ${SHA:+commit $SHA}${SHA:-no commit}"
+            echo
+            if [ -s "$TEST_KEEPER_OUT/report.md" ]; then cat "$TEST_KEEPER_OUT/report.md"; else echo "The agent wrote no report."; fi
+            if [ -s "$TEST_KEEPER_OUT/reverted.txt" ]; then
+              echo; echo "### Reverted by CI"
+              sed 's/^/- `/; s/$/`/' "$TEST_KEEPER_OUT/reverted.txt"
+            fi
+            echo; echo "Add the \`test-keeper\` label to run the agent again."
+          } > "$TEST_KEEPER_OUT/comment.md"
+
+      - if: steps.changed.outputs.source == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: test-keeper
+          path: .test-keeper/comment.md
+
+      - if: github.event.action == 'labeled'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr edit ${{ github.event.pull_request.number }} --remove-label test-keeper --repo ${{ github.repository }} || true
