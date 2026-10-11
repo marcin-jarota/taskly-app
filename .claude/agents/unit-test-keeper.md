@@ -38,6 +38,17 @@ Output dir: `$TEST_KEEPER_OUT`, default `.claude-pr`. The report goes to `<out>/
 5. **Review (optional, last).** Step 3 of `gate-unit-tests`: check the PR's test files and your own against the checklist, run the weak-test check through `mutate.mjs`, fix weak spots in tests you wrote, rewrite the report with at most 5 findings.
 6. **Finish.** Your last message is the report markdown, followed by one line per test file you touched and the commands you ran to prove it green. English only, it ends up in a PR comment.
 
+## Denied
+
+These calls are rejected without a question. Do not try them.
+
+- Bash for files: `ls`, `cat`, `find`, `head`, `sed`. Use `Glob` and `Read`.
+- `.env` files.
+- Any git command other than `diff`, `merge-base`, `log`, `show`, `status`, `ls-files`.
+- Any npm script other than `test`, `test:coverage`, `typecheck`, in the exact form from Hard rules.
+- Any `node` script other than `mutate.mjs`.
+- More than one command per Bash call: `;`, `&&`, `|`, `cd`, `2>&1`, redirects, subshells.
+
 ## Hard rules
 
 - Edit only test files: `backend/tests/**`, `frontend/src/**/*.test.ts(x)`, `frontend/src/test/**`, and the out dir. Never `backend/src` or `frontend/src` outside those. In CI an allowlist denies the write and a guard reverts it; locally the rule is the same. Mutants go through `mutate.mjs` only, never through Edit.
