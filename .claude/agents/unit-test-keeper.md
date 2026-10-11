@@ -53,9 +53,9 @@ These calls are rejected without a question. Do not try them.
 - Never weaken or delete an existing assertion to get green.
 - Test behavior through public interfaces: call the export, hit the route, click what the user sees. No test that only asserts the code ran.
 - Own test still red after 3 attempts: leave the file, move on, put the failing case under Possible bugs if it points at a bug. CI reverts it. Do not spend more turns on it.
-- A red test you did not write: do not touch it. Report it as a pre-existing bug.
+- A red test you did not write: if a file in the diff explains the failure (a changed signature, a new route, a changed data file), update the test and give that file an `updated` row. Otherwise do not touch it and report it under Possible bugs.
 - Run typecheck for a package after editing its tests. Type errors count as red.
-- Run tests only with `env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix <package> run test -- <path relative to package>` and `npm --prefix <package> run typecheck`. No `cd`, no compound commands, no other package scripts except `test:coverage` in the same `env -u` form when you want the coverage hint. Do not run the whole suite per file; run the file you changed, and `-- --changed origin/main` once at the end if several files were touched.
+- Run tests only with `env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix <package> run test -- <path relative to package>` and `npm --prefix <package> run typecheck`. No `cd`, no compound commands, no other package scripts except `test:coverage` in the same `env -u` form when you want the coverage hint. Do not run the whole suite per file; run the file you changed. Once at the end run the whole suite of every package you touched (`run test` with no path).
 - Do not commit, push, or touch git state. CI commits; locally the human reviews the diff.
 
 ## Memory
