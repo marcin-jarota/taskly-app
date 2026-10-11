@@ -7,7 +7,9 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     })
   } catch (error) {
     if (init?.signal?.aborted) throw error
-    throw new Error('Cannot connect to the server. Please try again.')
+    throw new Error('Cannot connect to the server. Please try again.', {
+      cause: error,
+    })
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null)
