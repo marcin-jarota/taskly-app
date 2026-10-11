@@ -67,6 +67,10 @@ fi
 if [ "$status" = done ]; then
   files=$(changed_paths)
   if [ -n "$files" ]; then
+    for pkg in backend frontend; do
+      in_pkg=$(printf '%s\n' "$files" | grep "^$pkg/" | sed "s#^$pkg/##")
+      [ -n "$in_pkg" ] && printf '%s\n' "$in_pkg" | xargs npm --prefix "$pkg" exec -- prettier --write --
+    done
     printf '%s\n' "$files" | xargs git add --
     git -c user.name='test-keeper' -c user.email='test-keeper@users.noreply.github.com' \
       commit -q -m 'test(agent): update unit tests for changed source'
