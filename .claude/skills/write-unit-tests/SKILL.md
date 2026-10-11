@@ -71,6 +71,6 @@ it('submits trimmed values and the selected priority', async () => {
 ## Boundaries
 
 - **Change only test files:** `backend/tests/**`, `frontend/src/**/*.test.ts(x)`, `frontend/src/test/**`. If a test seems to need a production change, that is a finding. In CI a guard reverts any other file anyway, and a silent "fix" hides the bug from the reviewer.
-- **Never weaken or delete an existing assertion to get green.** A red test you did not write stays as it is and goes in your report - it may be the most valuable signal of the run.
-- **Bug found:** report `expected` vs `actual` with the failing test as a snippet. Do not leave a red test in the tree.
+- **Never weaken or delete an existing assertion to get green.**
+- **Bug found:** report `expected` vs `actual` with the failing test as a snippet. Do not leave your own red test in the tree.
 - **Which files need tests** is decided by [gate-unit-tests](../gate-unit-tests/SKILL.md), not here.

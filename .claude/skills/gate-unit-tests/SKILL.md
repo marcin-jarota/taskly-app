@@ -17,7 +17,7 @@ git diff --name-only <base>        # changed files (whole repo: git ls-files 'ba
 git diff <base> -- <path>          # the change itself, read it before deciding
 ```
 
-Untracked files are not in the diff; locally, `git add -N <file>` them first. In CI `$TEST_KEEPER_OUT/changed.txt` already holds the list.
+Untracked files are not in the diff; add them from `git status --porcelain --untracked-files=all`. In CI `$TEST_KEEPER_OUT/changed.txt` already holds the list.
 
 Sort each changed file:
 
@@ -44,7 +44,7 @@ Not worth unit tests, so normally `skipped`: `types.ts` and `*.types.ts`, `index
 
 "Existing cases cover it" needs evidence: name the case.
 
-A red test you did not write: if a file in the diff explains the failure (a changed signature, a new route, a changed data file), update the test and give the source file that caused it an `updated` row. Otherwise leave it untouched and record it under Possible bugs as pre-existing. It may be the most useful thing the run finds.
+A red test you did not write: if a file in the diff explains the failure (a changed signature, a new route, a changed data file), that source file gets `updated` and the test is fixed with `write-unit-tests`. Otherwise it is `bug` (pre-existing red test): the test stays untouched. It may be the most useful thing the run finds.
 
 Once at the end, run the whole suite of every package you touched (`env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix <package> run test`), so a test you did not open but the diff broke still shows up.
 

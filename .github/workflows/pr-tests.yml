@@ -115,8 +115,6 @@ jobs:
 
       - id: publish
         if: steps.changed.outputs.source == 'true'
-        env:
-          BASE_REF: ${{ github.base_ref }}
         run: bash .github/scripts/test-keeper-publish.sh
 
       - if: steps.publish.outputs.sha != ''
