@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, labeled]
 
+permissions:
+  contents: read
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -16,6 +19,8 @@ jobs:
         working-directory: ${{ matrix.package }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -37,6 +42,8 @@ jobs:
         working-directory: ${{ matrix.package }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -75,9 +82,11 @@ jobs:
       - run: npm --prefix backend ci
       - run: npm --prefix frontend ci
       - id: changed
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           mkdir -p "$TEST_KEEPER_OUT"
-          git diff --name-only "origin/${{ github.base_ref }}...HEAD" > "$TEST_KEEPER_OUT/changed.txt"
+          git diff --name-only "origin/${BASE_REF}...HEAD" > "$TEST_KEEPER_OUT/changed.txt"
           if grep -qE '^(backend|frontend)/src/' "$TEST_KEEPER_OUT/changed.txt"; then
             echo source=true >> "$GITHUB_OUTPUT"
           fi
@@ -97,7 +106,7 @@ jobs:
             --effort medium
             --max-budget-usd 3
             --permission-mode dontAsk
-            --allowedTools "Read,Glob,Grep,Skill,Edit(backend/tests/**),Edit(frontend/src/**/*.test.ts),Edit(frontend/src/**/*.test.tsx),Edit(frontend/src/test/**),Edit(.test-keeper/**),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix backend run test *),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix backend run test:coverage),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix frontend run test *),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix frontend run test:coverage),Bash(npm --prefix backend run typecheck),Bash(npm --prefix frontend run typecheck),Bash(node .claude/skills/gate-unit-tests/scripts/mutate.mjs *),Bash(git diff *),Bash(git merge-base *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git ls-files *)"
+            --allowedTools "Read(backend/**),Read(frontend/**),Read(.claude/**),Read(.test-keeper/**),Read(CLAUDE.md),Glob,Grep,Skill,Edit(backend/tests/**),Edit(frontend/src/**/*.test.ts),Edit(frontend/src/**/*.test.tsx),Edit(frontend/src/test/**),Edit(.test-keeper/**),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix backend run test *),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix backend run test:coverage),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix frontend run test *),Bash(env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix frontend run test:coverage),Bash(npm --prefix backend run typecheck),Bash(npm --prefix frontend run typecheck),Bash(node .claude/skills/gate-unit-tests/scripts/mutate.mjs *),Bash(git diff *),Bash(git merge-base *),Bash(git log *),Bash(git show *),Bash(git status *),Bash(git ls-files *)"
 
       - id: publish
         if: steps.changed.outputs.source == 'true'
@@ -108,7 +117,8 @@ jobs:
       - if: steps.publish.outputs.sha != ''
         env:
           PAT: ${{ secrets.TEST_KEEPER_PAT }}
-        run: git push "https://x-access-token:${PAT}@github.com/${{ github.repository }}.git" "HEAD:${{ github.head_ref }}"
+          HEAD_REF: ${{ github.head_ref }}
+        run: git push "https://x-access-token:${PAT}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${HEAD_REF}"
 
       - id: comment
         if: steps.changed.outputs.source == 'true'
@@ -129,6 +139,9 @@ jobs:
             fi
             echo; echo "Add the \`test-keeper\` label to run the agent again."
           } > "$TEST_KEEPER_OUT/comment.md"
+          if grep -qE 'sk-ant-|ghp_|github_pat_' "$TEST_KEEPER_OUT/comment.md"; then
+            echo "comment looks like it holds a secret, not posting"; exit 1
+          fi
 
       - if: steps.changed.outputs.source == 'true'
         uses: marocchino/sticky-pull-request-comment@v2

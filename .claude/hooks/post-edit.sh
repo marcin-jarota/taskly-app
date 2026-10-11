@@ -3,6 +3,9 @@
 # Exit 2 feeds stderr back to the agent as a correction.
 set -u
 
+# In CI the lint and prettier configs come from the PR head and the hook inherits the API key.
+[ -n "${GITHUB_ACTIONS:-}" ] && exit 0
+
 file=$(node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{process.stdout.write(JSON.parse(d).tool_input?.file_path||"")}catch{}})')
 root=$(cd "$(dirname "$0")/../.." && pwd)
 rel=${file#"$root"/}
