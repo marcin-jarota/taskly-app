@@ -1,3 +1,4 @@
+import { createDatabase } from '../src/core/database.ts';
 import type { TodoRecord, Todo } from '../src/features/todos/types.js';
 
 export const record: TodoRecord = {
@@ -6,3 +7,6 @@ export const record: TodoRecord = {
   created_at: new Date('2026-10-01T12:00:00Z'), updated_at: new Date('2026-10-01T12:00:00Z'),
 };
 export const todo: Todo = { ...record, priority: 'high', due_date: '2026-10-15', created_at: record.created_at.toISOString(), updated_at: record.updated_at.toISOString() };
+
+// Real Prisma delegates with IO mocked through vi.spyOn: no PostgreSQL is needed.
+export const testDatabase = () => createDatabase('postgresql://test:test@localhost:5432/test');

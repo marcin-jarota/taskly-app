@@ -4,8 +4,6 @@ import { expect, it, vi } from 'vitest'
 import { todoFixture } from '../../../test/todoFixture'
 import { TodoItem } from './TodoItem'
 
-vi.mock('../../../design-system', () => import('../../../design-system/mocks'))
-
 it('shows an active task and forwards edit requests', async () => {
   const user = userEvent.setup()
   const onEdit = vi.fn()

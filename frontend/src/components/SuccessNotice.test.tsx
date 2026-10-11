@@ -3,7 +3,6 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { Alert } from '../design-system'
 import { SuccessNotice } from './SuccessNotice'
 
-vi.mock('../design-system', () => import('../design-system/mocks'))
 beforeEach(() => vi.clearAllMocks())
 
 it('renders nothing without a message', () => {

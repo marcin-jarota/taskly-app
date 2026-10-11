@@ -3,8 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { TodoFilters } from './TodoFilters'
 
-vi.mock('../../../design-system', () => import('../../../design-system/mocks'))
-
 it('displays controlled values and forwards all filter changes', async () => {
   const user = userEvent.setup()
   const callbacks = {

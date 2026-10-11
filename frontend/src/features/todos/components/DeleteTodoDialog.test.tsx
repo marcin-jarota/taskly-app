@@ -5,19 +5,21 @@ import { todoFixture } from '../../../test/todoFixture'
 import { useDeleteTodoMutation } from '../hooks/useDeleteTodoMutation'
 import { DeleteTodoDialog } from './DeleteTodoDialog'
 
-vi.mock('../../../design-system', () => import('../../../design-system/mocks'))
 vi.mock('../hooks/useDeleteTodoMutation', () => ({
   useDeleteTodoMutation: vi.fn(),
 }))
 
-it('shows a deletion error and allows cancelling without deleting', async () => {
+type Mutation = ReturnType<typeof useDeleteTodoMutation>
+
+function setup(mutation: Partial<Mutation> = {}) {
   const user = userEvent.setup()
-  const mutateAsync = vi.fn()
+  const mutateAsync = vi.fn().mockResolvedValue(undefined)
   vi.mocked(useDeleteTodoMutation).mockReturnValue({
     isPending: false,
-    error: new Error('Could not delete.'),
+    error: null,
     mutateAsync,
-  } as unknown as ReturnType<typeof useDeleteTodoMutation>)
+    ...mutation,
+  } as unknown as Mutation)
   const onClose = vi.fn()
   const onDeleted = vi.fn()
   render(
@@ -28,15 +30,41 @@ it('shows a deletion error and allows cancelling without deleting', async () => 
       onDeleted={onDeleted}
     />,
   )
+  return { user, mutateAsync, onClose, onDeleted }
+}
+
+it('asks to confirm deleting the named task', () => {
+  setup()
+
   expect(screen.getByRole('dialog', { name: 'Delete task?' })).toBeVisible()
   expect(
     screen.getByText(
       `The task “${todoFixture.title}” will be permanently deleted.`,
     ),
   ).toBeVisible()
+})
+
+it('shows the deletion error from the server', () => {
+  setup({ error: new Error('Could not delete.') })
+
   expect(screen.getByTestId('alert')).toHaveTextContent('Could not delete.')
+})
+
+it('deletes the task and reports success', async () => {
+  const { user, mutateAsync, onDeleted } = setup()
+
+  await user.click(screen.getByRole('button', { name: 'Delete task' }))
+
+  expect(mutateAsync).toHaveBeenCalledWith(todoFixture.id)
+  expect(onDeleted).toHaveBeenCalledOnce()
+})
+
+it('cancels without deleting', async () => {
+  const { user, mutateAsync, onClose, onDeleted } = setup()
+
   await user.click(screen.getByRole('button', { name: 'Cancel' }))
-  expect(onClose).toHaveBeenCalledTimes(1)
+
+  expect(onClose).toHaveBeenCalledOnce()
   expect(mutateAsync).not.toHaveBeenCalled()
   expect(onDeleted).not.toHaveBeenCalled()
 })

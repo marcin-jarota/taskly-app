@@ -3,7 +3,6 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { Heading, Text } from '../design-system'
 import { ApplicationHeader } from './ApplicationHeader'
 
-vi.mock('../design-system', () => import('../design-system/mocks'))
 beforeEach(() => vi.clearAllMocks())
 
 it('provides a home link, application title and task list description', () => {

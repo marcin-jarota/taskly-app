@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 import { TodoList } from './TodoList'
 
-vi.mock('../../../design-system', () => import('../../../design-system/mocks'))
 vi.mock('./TodoEmptyState', () => ({
   TodoEmptyState: () => <p>Empty task list</p>,
 }))

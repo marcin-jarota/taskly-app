@@ -3,8 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { expect, it, vi } from 'vitest'
 import { TodosHeader } from './TodosHeader'
 
-vi.mock('../../../design-system', () => import('../../../design-system/mocks'))
-
 it('invokes creation when enabled and blocks it when disabled', async () => {
   const user = userEvent.setup()
   const onCreate = vi.fn()

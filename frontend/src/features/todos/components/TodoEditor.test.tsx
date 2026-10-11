@@ -7,7 +7,6 @@ import { useUpdateTodoMutation } from '../hooks/useUpdateTodoMutation'
 import type { TodoInput } from '../types'
 import { TodoEditor } from './TodoEditor'
 
-vi.mock('../../../design-system', () => import('../../../design-system/mocks'))
 vi.mock('../hooks/useCreateTodoMutation', () => ({
   useCreateTodoMutation: vi.fn(),
 }))

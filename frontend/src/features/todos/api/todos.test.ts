@@ -9,13 +9,19 @@ beforeEach(() => vi.clearAllMocks())
 it('passes the abort signal when fetching tasks', async () => {
   const signal = new AbortController().signal
   vi.mocked(request).mockResolvedValue([todoFixture])
-  await expect(todosApi.list(signal)).resolves.toEqual([todoFixture])
+
+  const todos = await todosApi.list(signal)
+
+  expect(todos).toEqual([todoFixture])
   expect(request).toHaveBeenCalledWith('/todos', { signal })
 })
 
 it('sends only writable task fields on creation', async () => {
   vi.mocked(request).mockResolvedValue(todoFixture)
-  await expect(todosApi.create(todoFixture)).resolves.toEqual(todoFixture)
+
+  const created = await todosApi.create(todoFixture)
+
+  expect(created).toEqual(todoFixture)
   expect(request).toHaveBeenCalledWith('/todos', {
     method: 'POST',
     body: JSON.stringify({

@@ -8,7 +8,6 @@ import { useTodosQuery } from './hooks/useTodosQuery'
 import { useUpdateTodoMutation } from './hooks/useUpdateTodoMutation'
 import { TodosPage } from './TodosPage'
 
-vi.mock('../../design-system', () => import('../../design-system/mocks'))
 vi.mock('../../hooks/useNotice', () => ({ useNotice: vi.fn() }))
 vi.mock('./hooks/useTodoFilters', () => ({ useTodoFilters: vi.fn() }))
 vi.mock('./hooks/useTodosBusy', () => ({ useTodosBusy: vi.fn() }))
