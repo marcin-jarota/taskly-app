@@ -21,3 +21,6 @@ coverage/
 
 # macOS
 .DS_Store
+
+# Unit test keeper run output
+.claude-pr/
