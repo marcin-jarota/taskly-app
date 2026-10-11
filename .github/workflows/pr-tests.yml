@@ -121,7 +121,7 @@ jobs:
         env:
           PAT: ${{ secrets.TEST_KEEPER_PAT }}
           HEAD_REF: ${{ github.head_ref }}
-        run: git push "https://x-access-token:${PAT}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${HEAD_REF}"
+        run: git -c core.hooksPath=/dev/null push "https://x-access-token:${PAT}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${HEAD_REF}"
 
       - id: comment
         if: steps.changed.outputs.source == 'true'
@@ -160,7 +160,7 @@ jobs:
             echo; echo "Add the \`test-keeper\` label to run the agent again."
             echo "<!-- test-keeper-totals cost=$tcost tokens=$ttokens runs=$truns -->"
           } > "$TEST_KEEPER_OUT/comment.md"
-          if grep -qE 'sk-ant-|ghp_|github_pat_' "$TEST_KEEPER_OUT/comment.md"; then
+          if grep -qE 'sk-ant-|gh[pousr]_|github_pat_' "$TEST_KEEPER_OUT/comment.md"; then
             echo "comment looks like it holds a secret, not posting"; exit 1
           fi
 
