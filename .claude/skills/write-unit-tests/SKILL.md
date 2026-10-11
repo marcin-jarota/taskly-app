@@ -36,12 +36,12 @@ Package-specific traps the code does not show: [references/backend.md](reference
 4. **Write one `it` per behavior**, named as the behavior ("rejects a whitespace-only title without submitting"). Put repeated arrange code in a local `setup()`. If a helper you need already exists inline in another test file, or every test of this kind would need it, move it to `frontend/src/test/` or `backend/tests/` and import it from both - copies drift, and one CI run writes many test files at once.
 5. **Run that file, then typecheck the package:**
    ```bash
-   npm --prefix backend run test -- tests/health.test.ts
+   env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix backend run test -- tests/health.test.ts
    npm --prefix backend run typecheck
-   npm --prefix frontend run test -- src/lib/http.test.ts
+   env -u ANTHROPIC_API_KEY -u GITHUB_TOKEN npm --prefix frontend run test -- src/lib/http.test.ts
    npm --prefix frontend run typecheck
    ```
-   Paths after `--` are relative to the package. `npm --prefix` avoids `cd`, which matters because the repo has no root `package.json` and CI runs under a command allowlist. A type error counts as red.
+   Paths after `--` are relative to the package. `npm --prefix` avoids `cd`, which matters because the repo has no root `package.json` and CI runs under a command allowlist that accepts test runs only in this exact form; `env -u` keeps the CI secrets out of test code the PR author controls. A type error counts as red.
 6. **If red, fix the test, up to 3 attempts.** If the failure shows the source is wrong (not your assumption), stop and report a bug.
 7. **Check each new test against the checklist** before you report, above all "name one wrong version of the code". Fixing a weak test now is cheaper than a review finding and a second iteration.
 8. **Report briefly, in English** even when the user wrote in another language - the report ends up in PR comments and the repo, which are English: file, number of cases, behaviors covered, shared helpers added or moved, what you skipped and why.
@@ -73,4 +73,4 @@ it('submits trimmed values and the selected priority', async () => {
 - **Change only test files:** `backend/tests/**`, `frontend/src/**/*.test.ts(x)`, `frontend/src/test/**`. If a test seems to need a production change, that is a finding. In CI a guard reverts any other file anyway, and a silent "fix" hides the bug from the reviewer.
 - **Never weaken or delete an existing assertion to get green.** A red test you did not write stays as it is and goes in your report - it may be the most valuable signal of the run.
 - **Bug found:** report `expected` vs `actual` with the failing test as a snippet. Do not leave a red test in the tree.
-- **Not worth unit tests:** `types.ts`, `*.types.ts`, `index.ts` barrels, `main.ts`, `core/lifespan.ts`, `design-system/**` (Storybook covers it). Say so in one line.
+- **Which files need tests** is decided by [gate-unit-tests](../gate-unit-tests/SKILL.md), not here.
