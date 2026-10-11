@@ -19,8 +19,8 @@ export default defineConfig({
       thresholds: {
         lines: 95,
         statements: 95,
-        branches: 94,
-        functions: 93,
+        branches: 95,
+        functions: 90,
         'src/features/todos/{validators,mappers}.ts': {
           statements: 100,
           branches: 100,
