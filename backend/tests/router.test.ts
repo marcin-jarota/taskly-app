@@ -67,7 +67,7 @@ it.each([
 
 it('returns task counts from /stats instead of treating it as an ID', async () => {
   const { app, repository } = setup()
-  const stats = { total: 3, active: 2, completed: 1 }
+  const stats = { total: 3, active: 2, completed: 1, overdue: 1 }
   repository.stats.mockResolvedValue(stats)
 
   const response = await request(app).get('/api/todos/stats')

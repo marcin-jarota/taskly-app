@@ -132,17 +132,35 @@ it.each([{}, JSON.parse('{"id":2}')])(
   },
 )
 
-it('counts all, completed and active tasks', async () => {
+it('counts all, completed, active and overdue tasks', async () => {
   const { database, repository } = setup()
   const count = vi
     .spyOn(database.todo, 'count')
     .mockResolvedValueOnce(5)
     .mockResolvedValueOnce(2)
+    .mockResolvedValueOnce(1)
 
   const stats = await repository.stats()
 
-  expect(stats).toEqual({ total: 5, active: 3, completed: 2 })
+  expect(stats).toEqual({ total: 5, active: 3, completed: 2, overdue: 1 })
   expect(count).toHaveBeenNthCalledWith(2, { where: { completed: true } })
+})
+
+it('counts a task as overdue only when due before today (UTC) and not completed', async () => {
+  const { database, repository } = setup()
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-10-11T23:30:00.000Z'))
+  const count = vi.spyOn(database.todo, 'count').mockResolvedValue(0)
+
+  await repository.stats()
+
+  expect(count).toHaveBeenCalledWith({
+    where: {
+      completed: false,
+      due_date: { lt: new Date('2026-10-11T00:00:00.000Z') },
+    },
+  })
+  vi.useRealTimers()
 })
 
 it.each([
