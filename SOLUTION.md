@@ -116,11 +116,12 @@ Run 2, after a behavior change and the label: https://github.com/marcin-jarota/t
 
 Other evidence:
 
-| PR                                                         | Shows                                                                                                                                                                                                                                                                                                                                                                | Cost                   |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| [#1](https://github.com/marcin-jarota/taskly-app/pull/1)   | CI-only change: test-keeper job stops before the agent ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38139103892))                                                                                                                                                                                                                                 | $0                     |
-| [#2](https://github.com/marcin-jarota/taskly-app/pull/2)   | One pure helper, no tests: agent adds 2 cases (`01575ea`), push runs only `checks` + `baseline` ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38139143502))                                                                                                                                                                                        | $0.11                  |
-| [#10](https://github.com/marcin-jarota/taskly-app/pull/10) | Run 1 ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38140735298)) fixed red typecheck and backend tests in `4447ef2`; its comment was lost to a first-run totals bug fixed in #11. Run 2 and run 3 ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38163954074)) after the label: 3 files `skipped` with covering cases, no commit | run 3: $0.08, 11 turns |
+| PR                                                                | Shows                                                                                                                                                                                                                                                                                                                                                                | Cost                   |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| [#1](https://github.com/marcin-jarota/taskly-app/pull/1)          | CI-only change: test-keeper job stops before the agent ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38139103892))                                                                                                                                                                                                                                 | $0                     |
+| [#2](https://github.com/marcin-jarota/taskly-app/pull/2)          | One pure helper, no tests: agent adds 2 cases (`01575ea`), push runs only `checks` + `baseline` ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38139143502))                                                                                                                                                                                        | $0.11                  |
+| [#10](https://github.com/marcin-jarota/taskly-app/pull/10)        | Run 1 ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38140735298)) fixed red typecheck and backend tests in `4447ef2`; its comment was lost to a first-run totals bug fixed in #11. Run 2 and run 3 ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38163954074)) after the label: 3 files `skipped` with covering cases, no commit | run 3: $0.08, 11 turns |
+| [#10](https://github.com/marcin-jarota/taskly-app/pull/10), run 4 | After the final fixes on `main`: a behavior change (`overdue` count in `stats()`) left one test red. The agent updated it, added a case for the overdue filter, and CI pushed `02f1605`; `checks` and `baseline` are green on it ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38167177760))                                                       | $0.06, 16 turns        |
 
 The CI-fix PRs #3, #4, #6, #7, #8 and #11 each came from a real run, each fix in its own PR.
 
@@ -134,7 +135,9 @@ The CI-fix PRs #3, #4, #6, #7, #8 and #11 each came from a real run, each fix in
 
 ## 6. Limitations
 
-- Needs a paid API key; cost per run is $0.08-0.23 here.
+- Needs a paid API key. Measured cost per run here: $0.06-0.23, 11-37 turns.
+- Each run is capped at `--max-budget-usd 3` and `maxTurns: 200` (agent frontmatter). The caps are sized for this repo with a wide margin. A large PR can hit a cap: if it hits before the agent writes `report.md`, the run ends `incomplete`, CI reverts the tree, nothing is committed, and the spend is lost. A team with bigger diffs has to tune both numbers.
+- The test-keeper job runs `test-keeper-publish.sh` from the PR head, while the workflow file comes from `main`. A branch that is behind `main` after a change to the workflow-script contract fails in the publish step. Seen on #10 ([run](https://github.com/marcin-jarota/taskly-app/actions/runs/38166895835)); merging `main` into the branch fixed it.
 - LLM output is not deterministic. Two runs on the same diff can decide differently.
 - PRs from forks are not supported.
 - Verification covers touched test files plus the full suites of touched packages, not a before/after comparison of the whole repo.
@@ -147,6 +150,7 @@ The CI-fix PRs #3, #4, #6, #7, #8 and #11 each came from a real run, each fix in
 
 ## 7. What I would extend or change for production
 
+- Run `test-keeper-publish.sh` from the base branch, like `.claude/`, so a branch behind `main` cannot run an old script.
 - Run the test keeper from a hook, locally or in the cloud, on a subscription or purchased package instead of a CI API key. Now a run takes about 2 minutes; PRs with 2-4k changed lines and frequent delivery would cost more CI time and API spend. Downside: it uses the developer's tokens, not company ones. The choice depends on how the team works and where subscriptions come from.
 - Open a PR into the author's PR instead of committing to it, depending on the autonomy level the team wants.
 - Split the job: the agent runs with the API key only; a separate job without it verifies and pushes.
