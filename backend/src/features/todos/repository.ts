@@ -64,11 +64,17 @@ export class TodoRepository implements TodoStore {
   }
 
   async stats(): Promise<TodoStats> {
-    const [total, completed] = await Promise.all([
+    const today = new Date(
+      `${new Date().toISOString().slice(0, 10)}T00:00:00.000Z`,
+    )
+    const [total, completed, overdue] = await Promise.all([
       this.database.todo.count(),
       this.database.todo.count({ where: { completed: true } }),
+      this.database.todo.count({
+        where: { completed: false, due_date: { lt: today } },
+      }),
     ])
-    return { total, active: total - completed, completed }
+    return { total, active: total - completed, completed, overdue }
   }
 
   async delete(id: number): Promise<boolean> {

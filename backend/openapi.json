@@ -97,12 +97,17 @@
                     },
                     "completed": {
                       "type": "integer"
+                    },
+                    "overdue": {
+                      "type": "integer",
+                      "description": "Not completed, due date before today (UTC)"
                     }
                   },
                   "required": [
                     "total",
                     "active",
-                    "completed"
+                    "completed",
+                    "overdue"
                   ]
                 }
               }

@@ -14,6 +14,8 @@ export interface TodoStats {
   total: number
   active: number
   completed: number
+  /** Not completed, due date before today (UTC). */
+  overdue: number
 }
 
 export interface TodoStore {
