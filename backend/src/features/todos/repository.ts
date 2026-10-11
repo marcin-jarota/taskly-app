@@ -5,6 +5,7 @@ import type {
   TodoCreate,
   TodoUpdate,
   Todo,
+  TodoStats,
 } from './types.js'
 
 export class TodoRepository implements TodoStore {
@@ -60,6 +61,14 @@ export class TodoRepository implements TodoStore {
       },
     })
     return rows.length ? fromModel(rows[0]) : null
+  }
+
+  async stats(): Promise<TodoStats> {
+    const [total, completed] = await Promise.all([
+      this.database.todo.count(),
+      this.database.todo.count({ where: { completed: true } }),
+    ])
+    return { total, active: total - completed, completed }
   }
 
   async delete(id: number): Promise<boolean> {

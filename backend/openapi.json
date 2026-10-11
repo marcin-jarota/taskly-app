@@ -78,6 +78,39 @@
         }
       }
     },
+    "/api/todos/stats": {
+      "get": {
+        "summary": "Count tasks by state",
+        "responses": {
+          "200": {
+            "description": "Task counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "active": {
+                      "type": "integer"
+                    },
+                    "completed": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "active",
+                    "completed"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/todos/{id}": {
       "parameters": [
         {

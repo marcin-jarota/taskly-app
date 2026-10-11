@@ -18,6 +18,7 @@ export function createTodosRouter(repository: TodoStore) {
       return res.status(422).json({ detail: result.error.issues })
     res.status(201).json(await repository.create(result.data))
   })
+  router.get('/stats', async (req, res) => res.json(await repository.stats()))
   router.get('/:id', async (req, res) => {
     const todo = await repository.get(Number(res.locals.todoId))
     if (!todo) return res.status(404).json({ detail: 'Task not found.' })
