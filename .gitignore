@@ -24,3 +24,4 @@ coverage/
 
 # Unit test keeper run output
 .claude-pr/
+.test-keeper/

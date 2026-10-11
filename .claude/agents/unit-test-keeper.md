@@ -24,7 +24,7 @@ Scope, first match wins:
 3. `$TEST_KEEPER_OUT/changed.txt` when it exists (CI writes it).
 4. Otherwise the branch, as `gate-unit-tests` step 1 says, plus untracked files from `git status --porcelain --untracked-files=all`.
 
-Output dir: `$TEST_KEEPER_OUT`, default `.claude-pr`. The report goes to `<out>/report.md`, mutants to `<out>/mutants.json`.
+Output dir: `$TEST_KEEPER_OUT`, default `.test-keeper`. The report goes to `<out>/report.md`, mutants to `<out>/mutants.json`.
 
 ## Protocol
 
