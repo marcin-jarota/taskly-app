@@ -63,6 +63,17 @@ it.each([
   })
 })
 
+it('deletes completed tasks and returns the count', async () => {
+  vi.mocked(request).mockResolvedValue({ deleted: 2 })
+
+  const result = await todosApi.removeCompleted()
+
+  expect(result).toEqual({ deleted: 2 })
+  expect(request).toHaveBeenCalledWith('/todos/completed', {
+    method: 'DELETE',
+  })
+})
+
 it('deletes a task by id', async () => {
   vi.mocked(request).mockResolvedValue(undefined)
 

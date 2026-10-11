@@ -11,6 +11,7 @@ function setup() {
     get: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    deleteCompleted: vi.fn(),
   }
   const app = express()
   app.use(express.json())
@@ -147,6 +148,21 @@ it('deletes a task', async () => {
   expect(response.text).toBe('')
   expect(repository.delete).toHaveBeenCalledWith(1)
 })
+
+it.each([0, 3])(
+  'deletes completed tasks and reports the count (%i)',
+  async (deleted) => {
+    const { app, repository } = setup()
+    repository.deleteCompleted.mockResolvedValue(deleted)
+
+    const response = await request(app).delete('/api/todos/completed')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ deleted })
+    expect(repository.deleteCompleted).toHaveBeenCalledOnce()
+    expect(repository.delete).not.toHaveBeenCalled()
+  },
+)
 
 it('returns 404 when deleting an unknown ID', async () => {
   const { app, repository } = setup()
