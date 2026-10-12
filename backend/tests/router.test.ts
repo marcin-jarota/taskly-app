@@ -11,6 +11,7 @@ function setup() {
     get: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
+    stats: vi.fn(),
   }
   const app = express()
   app.use(express.json())
@@ -63,6 +64,18 @@ it.each([
     expect(repository.create).not.toHaveBeenCalled()
   },
 )
+
+it('returns task counts from /stats instead of treating it as an ID', async () => {
+  const { app, repository } = setup()
+  const stats = { total: 3, active: 2, completed: 1, overdue: 1 }
+  repository.stats.mockResolvedValue(stats)
+
+  const response = await request(app).get('/api/todos/stats')
+
+  expect(response.status).toBe(200)
+  expect(response.body).toEqual(stats)
+  expect(repository.get).not.toHaveBeenCalled()
+})
 
 it('gets a task by ID', async () => {
   const { app, repository } = setup()

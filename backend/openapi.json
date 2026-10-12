@@ -78,6 +78,44 @@
         }
       }
     },
+    "/api/todos/stats": {
+      "get": {
+        "summary": "Count tasks by state",
+        "responses": {
+          "200": {
+            "description": "Task counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "active": {
+                      "type": "integer"
+                    },
+                    "completed": {
+                      "type": "integer"
+                    },
+                    "overdue": {
+                      "type": "integer",
+                      "description": "Not completed, due date before today (UTC)"
+                    }
+                  },
+                  "required": [
+                    "total",
+                    "active",
+                    "completed",
+                    "overdue"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/todos/{id}": {
       "parameters": [
         {

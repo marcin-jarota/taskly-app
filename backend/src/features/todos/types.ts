@@ -10,10 +10,19 @@ export type TodoUpdate = z.infer<typeof updateSchema>
 export type Todo = z.infer<typeof todoSchema>
 export type TodoRecord = PrismaTodo
 export type Database = PrismaClient
+export interface TodoStats {
+  total: number
+  active: number
+  completed: number
+  /** Not completed, due date before today (UTC). */
+  overdue: number
+}
+
 export interface TodoStore {
   list(): Promise<Todo[]>
   get(id: number): Promise<Todo | null>
   create(payload: TodoCreate): Promise<Todo>
   update(id: number, payload: TodoUpdate): Promise<Todo | null>
   delete(id: number): Promise<boolean>
+  stats(): Promise<TodoStats>
 }
