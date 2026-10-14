@@ -147,6 +147,18 @@ it.each([
   expect(remove).toHaveBeenCalledWith({ where: { id: 1 } })
 })
 
+it('deletes only completed tasks and returns how many', async () => {
+  const { database, repository } = setup()
+  const remove = vi
+    .spyOn(database.todo, 'deleteMany')
+    .mockResolvedValue({ count: 3 })
+
+  const result = await repository.deleteCompleted()
+
+  expect(result).toBe(3)
+  expect(remove).toHaveBeenCalledWith({ where: { completed: true } })
+})
+
 it('propagates database errors', async () => {
   const { database, repository } = setup()
   vi.spyOn(database.todo, 'findMany').mockRejectedValue(

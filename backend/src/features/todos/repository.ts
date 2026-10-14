@@ -62,6 +62,13 @@ export class TodoRepository implements TodoStore {
     return rows.length ? fromModel(rows[0]) : null
   }
 
+  async deleteCompleted(): Promise<number> {
+    const { count } = await this.database.todo.deleteMany({
+      where: { completed: true },
+    })
+    return count
+  }
+
   async delete(id: number): Promise<boolean> {
     const { count } = await this.database.todo.deleteMany({ where: { id } })
     return count > 0
